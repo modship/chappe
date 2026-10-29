@@ -5,6 +5,7 @@ export type Action =
   | "toggle-files"
   | "toggle-history"
   | "settings"
+  | "find"
   | "save"
   | "close-tab"
   | "next-tab"
@@ -41,6 +42,8 @@ export function matchShortcut(e: KeyboardEvent): Shortcut | null {
     switch (e.code) {
       case "Comma":
         return native("settings");
+      case "KeyF":
+        return native("find");
       case "KeyT":
         return native("new-session");
       case "KeyB":
@@ -73,6 +76,8 @@ export function matchShortcut(e: KeyboardEvent): Shortcut | null {
         return { action: "toggle-files", native: false };
       case "KeyH":
         return { action: "toggle-history", native: false };
+      case "KeyF":
+        return { action: "find", native: false };
       case "KeyW":
         return { action: "close-tab", native: false };
       case "KeyC":
@@ -89,5 +94,6 @@ export const shortcutLabel = {
   toggleFiles: isMac ? "⌘B" : "Ctrl+Shift+B",
   toggleHistory: isMac ? "⇧⌘H" : "Ctrl+Shift+H",
   settings: isMac ? "⌘," : "Ctrl+,",
+  find: isMac ? "⌘F" : "Ctrl+Shift+F",
   closeTab: isMac ? "⌘W" : "Ctrl+Shift+W",
 };

@@ -16,6 +16,7 @@ const FORWARDED: &[&str] = &[
     "toggle-files",
     "toggle-history",
     "settings",
+    "find",
 ];
 
 #[cfg(target_os = "macos")]
@@ -65,6 +66,8 @@ pub fn install(app: &mut App) -> tauri::Result<()> {
             &PredefinedMenuItem::copy(h, Some("Copy"))?,
             &PredefinedMenuItem::paste(h, Some("Paste"))?,
             &MenuItem::with_id(h, "select-all", "Select All", true, Some("Cmd+A"))?,
+            &sep()?,
+            &MenuItem::with_id(h, "find", "Find…", true, Some("Cmd+F"))?,
         ],
     )?;
 

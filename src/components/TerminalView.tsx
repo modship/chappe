@@ -4,6 +4,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebLinksAddon } from "@xterm/addon-web-links";
+import { SearchAddon } from "@xterm/addon-search";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { readText, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import type { TabTarget } from "../App";
@@ -21,6 +22,7 @@ import { themeById, xtermTheme } from "../lib/themes";
 import { isMac, platform } from "../lib/platform";
 import { PromptCard } from "./PromptCard";
 import { CommandCapture, type Busy } from "../lib/commandCapture";
+import { HIGHLIGHT_LIMIT, TerminalSearch } from "./TerminalSearch";
 
 /** What the app can ask of a terminal (menu items, shortcuts). */
 export interface TerminalApi {
@@ -34,6 +36,8 @@ export interface TerminalApi {
   insert(command: string): void;
   /** Runs a command, unless that would land somewhere unexpected. */
   run(command: string): Busy | null;
+  /** Opens the find bar, or selects its text if it's open. */
+  find(): void;
 }
 
 export type SessionState = "connecting" | "live" | "ended";
@@ -81,6 +85,7 @@ export function TerminalView(props: Props) {
   const fitRef = useRef<FitAddon | null>(null);
   const [prompt, setPrompt] = useState<PendingPrompt | null>(null);
   const [ended, setEnded] = useState<ExitInfo | null>(null);
+  const [search, setSearch] = useState<{ addon: SearchAddon; initial: string; key: number } | null>(null);
   const wasLive = useRef(false);
   // Callbacks change on every render; the terminal lives for the whole tab.
   const cb = useRef(props);
@@ -113,6 +118,8 @@ export function TerminalView(props: Props) {
     const fit = new FitAddon();
     fitRef.current = fit;
     term.loadAddon(fit);
+    const searchAddon = new SearchAddon({ highlightLimit: HIGHLIGHT_LIMIT });
+    term.loadAddon(searchAddon);
     term.loadAddon(new Unicode11Addon());
     term.unicode.activeVersion = "11";
     // Links open on ⌘/Ctrl-click only, so a stray click never launches a browser.
@@ -173,6 +180,14 @@ export function TerminalView(props: Props) {
         term.focus();
         return null;
       },
+      find: () => {
+        // A one-line selection is what you're probably looking for.
+        const selected = term.getSelection();
+        const initial = selected && !selected.includes("\n") ? selected : "";
+        setSearch((open) =>
+          open ? { ...open, initial: initial || open.initial, key: open.key + 1 } : { addon: searchAddon, initial, key: 0 },
+        );
+      },
     };
 
     // OSC 7: "file://host/path", sent by shells set up to report their folder.
@@ -201,6 +216,8 @@ export function TerminalView(props: Props) {
       nudgeTimer = window.setTimeout(() => term.refresh(0, term.rows - 1), 50);
     };
     const write = (data: string | Uint8Array) => term.write(data, nudge);
+    // Search highlights change the picture without any output: same remedy.
+    searchAddon.onDidChangeResults(nudge);
     const capture = new CommandCapture(
       term,
       (data, done) =>
@@ -374,6 +391,22 @@ export function TerminalView(props: Props) {
   return (
     <div className="term-pane" data-active={props.active}>
       <div ref={hostRef} className="term-host" />
+      {search && (
+        <TerminalSearch
+          addon={search.addon}
+          theme={themeById(theme)}
+          initial={search.initial}
+          focusKey={search.key}
+          onRestart={() => termRef.current?.clearSelection()}
+          onClose={() => {
+            setSearch(null);
+            const term = termRef.current;
+            term?.focus();
+            // The highlights go once the bar unmounts; draw the frame after.
+            window.setTimeout(() => term?.refresh(0, term.rows - 1), 50);
+          }}
+        />
+      )}
       {prompt && <PromptCard prompt={prompt.prompt} onReply={answer} />}
       {ended && (
         <div className="ended-bar" role="status">

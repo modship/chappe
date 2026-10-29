@@ -15,7 +15,7 @@ import {
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { bracketMatching, foldGutter, foldKeymap, indentOnInput, LanguageDescription } from "@codemirror/language";
 import { languages } from "@codemirror/language-data";
-import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
+import { highlightSelectionMatches, openSearchPanel, searchKeymap } from "@codemirror/search";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { editorTheme } from "../lib/editorTheme";
 import { loadFont, type Settings } from "../lib/settings";
@@ -30,6 +30,8 @@ export interface EditorApi {
   save(): Promise<boolean>;
   focus(): void;
   selectAll(): void;
+  /** Opens the find panel. */
+  find(): void;
 }
 
 export interface EditorInfo {
@@ -187,6 +189,9 @@ export function CodeEditor(props: Props) {
       save: () => save(),
       focus: () => view.focus(),
       selectAll: () => view.dispatch({ selection: { anchor: 0, head: view.state.doc.length } }),
+      find: () => {
+        openSearchPanel(view);
+      },
     });
     conflictSave.current = () => save(true);
 

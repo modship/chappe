@@ -61,6 +61,15 @@ tab's own connection, so it never asks for a password again.
 - Local deletes go to the Trash. Remote deletes are permanent and ask first.
 - ⌘B (Ctrl+Shift+B) shows or hides the panel; its edge can be dragged.
 
+## Find in the terminal
+
+⌘F (Ctrl+Shift+F elsewhere) opens a find bar over the terminal; it searches
+the output and the whole scrollback, from the latest output up. Matches are
+highlighted as you type, with their count and marks in the scrollbar. Enter
+(or ⌘G) goes up to older matches, Shift+Enter (or ⇧⌘G) back down; Aa, ab and .* switch on match case, whole
+word and regular expressions; Esc closes the bar. A one-line selection becomes
+the search.
+
 ## Editor
 
 Text files open in an editor tab: double-click one in the file panel, or
@@ -124,6 +133,7 @@ and editor, and are saved in `settings.json` in the app's config folder.
 | Show or hide files | ⌘B | Ctrl+Shift+B |
 | Show or hide history | ⇧⌘H | Ctrl+Shift+H |
 | Settings | ⌘, | Ctrl+, |
+| Find in terminal | ⌘F | Ctrl+Shift+F |
 | Save (editor) | ⌘S | Ctrl+S |
 | Find (editor) | ⌘F | Ctrl+F |
 | Close tab | ⌘W | Ctrl+Shift+W |

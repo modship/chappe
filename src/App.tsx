@@ -445,6 +445,9 @@ export default function App({ initialSettings }: { initialSettings: Settings }) 
           return toggleHistory();
         case "settings":
           return openSettings();
+        case "find":
+          if (!activeId) return;
+          return editors.current.get(activeId)?.find() ?? api?.find();
         case "close-tab":
           return activeId ? closeTab(activeId) : undefined;
         case "save":
