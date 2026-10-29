@@ -44,5 +44,16 @@
     ],
     "category": "DeveloperTool",
     "shortDescription": "Terminal and SSH client"
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDREMTVBMkEyNjRDMjY1M0MKUldROFpjSmtvcUlWVFh0ekU2TENzeFBDb2FwTVNab2xCYkNwWUtGeTFEUXNBKzFFNWFRL0VNTmcK",
+      "endpoints": [
+        "https://github.com/Modship/chappe/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }

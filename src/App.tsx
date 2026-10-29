@@ -24,6 +24,15 @@ import {
 } from "./lib/history";
 import type { Busy } from "./lib/commandCapture";
 import { SettingsPage } from "./components/SettingsPage";
+import { UpdateDialog } from "./components/UpdateDialog";
+import {
+  CHECK_INTERVAL,
+  FIRST_CHECK_DELAY,
+  appVersion,
+  checkForUpdate,
+  updatesConfigured,
+  type Update,
+} from "./lib/updates";
 import { DEFAULT_SETTINGS, applyInterface, saveSettings, type Settings } from "./lib/settings";
 import { applyTheme, themeById, uiColors } from "./lib/themes";
 import { shellName, tabLabel } from "./lib/title";
@@ -183,6 +192,32 @@ export default function App({ initialSettings }: { initialSettings: Settings }) 
   }, [settings.theme]);
 
   useEffect(() => applyInterface(settings), [settings]);
+
+  // ---------- Updates ----------
+  const [version, setVersion] = useState("");
+  const [canUpdate, setCanUpdate] = useState(false);
+  const [update, setUpdate] = useState<Update | null>(null);
+  const [updateOpen, setUpdateOpen] = useState(false);
+
+  useEffect(() => {
+    appVersion().then(setVersion, () => {});
+    void updatesConfigured().then(setCanUpdate);
+  }, []);
+
+  // A quiet look now and then; a failure (offline, no release yet) says nothing.
+  useEffect(() => {
+    if (!canUpdate || !settings.autoUpdateCheck) return;
+    const look = () =>
+      checkForUpdate()
+        .then((found) => found && setUpdate(found))
+        .catch((e) => console.warn("update check", e));
+    const first = window.setTimeout(look, FIRST_CHECK_DELAY);
+    const every = window.setInterval(look, CHECK_INTERVAL);
+    return () => {
+      clearTimeout(first);
+      clearInterval(every);
+    };
+  }, [canUpdate, settings.autoUpdateCheck]);
 
   // Saved shortly after the last change, not on every step of a slider.
   const saveTimer = useRef(0);
@@ -479,7 +514,7 @@ export default function App({ initialSettings }: { initialSettings: Settings }) 
   // An editor tab's files live where its source session is.
   const activeOrigin = activeTab?.target.kind === "editor" ? activeTab.target.file.origin : null;
   const sourceTab = activeOrigin?.kind === "ssh" ? (tabs.find((t) => t.id === activeOrigin.tabId) ?? null) : null;
-  const overlay = Boolean(dialog || palette || closing || quitting);
+  const overlay = Boolean(dialog || palette || closing || quitting || updateOpen);
 
   return (
     <div
@@ -549,6 +584,17 @@ export default function App({ initialSettings }: { initialSettings: Settings }) 
                 settings={settings}
                 onChange={updateSettings}
                 onReset={() => updateSettings(DEFAULT_SETTINGS)}
+                updates={{
+                  version,
+                  configured: canUpdate,
+                  available: update,
+                  check: async () => {
+                    const found = await checkForUpdate();
+                    setUpdate(found);
+                    return found;
+                  },
+                  open: () => setUpdateOpen(true),
+                }}
               />
             ) : (
             <TerminalView
@@ -606,6 +652,8 @@ export default function App({ initialSettings }: { initialSettings: Settings }) 
           historyVisible={historyVisible}
           onToggleHistory={toggleHistory}
           onOpenSettings={openSettings}
+          updateVersion={update?.version}
+          onOpenUpdate={() => setUpdateOpen(true)}
           configError={configError}
         />
       </main>
@@ -700,6 +748,13 @@ export default function App({ initialSettings }: { initialSettings: Settings }) 
           danger
           onCancel={() => setQuitting(0)}
           onConfirm={() => void getCurrentWindow().destroy()}
+        />
+      )}
+      {updateOpen && update && (
+        <UpdateDialog
+          update={update}
+          unsaved={tabs.filter((t) => t.dirty).length}
+          onClose={() => setUpdateOpen(false)}
         />
       )}
       {dialog && (

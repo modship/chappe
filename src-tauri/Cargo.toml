@@ -38,6 +38,8 @@ sha1 = "0.10"
 base64 = "0.22"
 russh-sftp = "3.0.1"
 trash = "5.2.9"
+tauri-plugin-updater = "2.14.1"
+tauri-plugin-process = "2.4.0"
 
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration

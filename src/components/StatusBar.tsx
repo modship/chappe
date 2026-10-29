@@ -16,10 +16,13 @@ interface Props {
   historyVisible: boolean;
   onToggleHistory(): void;
   onOpenSettings(): void;
+  /** A newer version that can be installed. */
+  updateVersion?: string;
+  onOpenUpdate(): void;
   configError: string | null;
 }
 
-export function StatusBar({ tab, filesVisible, onToggleFiles, historyVisible, onToggleHistory, onOpenSettings, configError }: Props) {
+export function StatusBar({ tab, filesVisible, onToggleFiles, historyVisible, onToggleHistory, onOpenSettings, updateVersion, onOpenUpdate, configError }: Props) {
   const remote = tab?.target.kind === "ssh";
   return (
     <footer className="statusbar">
@@ -80,6 +83,11 @@ export function StatusBar({ tab, filesVisible, onToggleFiles, historyVisible, on
           {tab.cols} × {tab.rows}
         </span>
       ) : null}
+      {updateVersion && (
+        <button type="button" className="status-update" onClick={onOpenUpdate}>
+          Update to {updateVersion}
+        </button>
+      )}
       <button
         type="button"
         className="icon-button"

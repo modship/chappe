@@ -168,6 +168,54 @@ and `@revoked` included). A new host asks for confirmation and is added to the
 file; a changed key refuses the connection and says how to fix it.
 
 
+## Releases and updates
+
+Chappe updates itself with the Tauri updater: it looks for a new version a
+few seconds after launch and every six hours (Settings › Updates can turn this
+off or check now). A newer version shows "Update to x.y.z" in the status bar;
+installing it downloads the new build, checks its signature and restarts the
+app. Updates come from the latest published release of
+[Modship/chappe](https://github.com/Modship/chappe/releases), which must be
+public for the app to download them.
+
+### One-time setup
+
+1. Generate the signing key pair, and keep the private key and its password
+   somewhere safe: without them no update can ever be published again.
+
+   ```sh
+   npm run tauri signer generate -- -w ~/.tauri/chappe.key
+   ```
+
+2. Put the public key (the content of `~/.tauri/chappe.key.pub`) in
+   `src-tauri/tauri.conf.json`, under `plugins.updater.pubkey`. Builds without
+   it don't offer updates.
+3. In the GitHub repository, add two Actions secrets:
+   `TAURI_SIGNING_PRIVATE_KEY` (the content of `~/.tauri/chappe.key`) and
+   `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+
+### Publishing a version
+
+1. Set the version everywhere it lives (`package.json`, `package-lock.json`,
+   `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` and `Cargo.lock`):
+   `npm run version:set 0.3.0`.
+2. Commit, tag and push, as the script suggests:
+   `git commit -am "Release v0.3.0" && git tag v0.3.0 && git push && git push --tags`.
+3. The Release workflow builds and signs the installers for macOS (Apple
+   silicon and Intel), Linux and Windows, and attaches them to a draft release
+   with `latest.json`.
+4. Edit the draft's notes (the app shows them) and publish it. Installed apps
+   find the update from then on.
+
+The updater replaces the app itself on macOS, the AppImage on Linux and the
+installed app on Windows. Linux .deb and .rpm installs update through their
+package manager instead. macOS builds aren't signed with an Apple Developer ID
+yet, so the first install needs right-click › Open.
+
+Signed update artifacts are only built with `src-tauri/tauri.release.conf.json`
+(`npm run tauri build -- --config src-tauri/tauri.release.conf.json`), so
+ordinary builds don't need the private key.
+
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every push to `main` and on pull requests,
@@ -190,6 +238,7 @@ src-tauri/src/
   files.rs         file panel and editor: local disk and SFTP, transfers
   history.rs       earlier commands from the shell's history file, local or remote
   settings.rs      settings.json storage
+  updates.rs       whether the build can verify updates
   menu.rs          native menu bar (macOS)
 src/
   lib/session.ts   client for sessions (ordered input queue, events)
@@ -200,6 +249,7 @@ src/
   lib/editor.ts    editor file API; lib/editorTheme.ts its CodeMirror theme
   lib/settings.ts  settings, defaults, fonts
   lib/themes.ts    themes and the interface colours derived from them
+  lib/updates.ts   update checks and installation
   lib/commandCapture.ts  reads the commands typed in a terminal
   lib/history.ts   in-memory command history per tab
   components/      session palette, file and history panels, editor, tabs, terminal, dialogs
@@ -213,5 +263,6 @@ src/
 4. ~~Text editor for local and remote files~~
 5. ~~Command history panel~~
 6. ~~Settings: themes and fonts~~
-7. Tunnels and port forwarding
-8. Profiles: custom shells, startup commands
+7. ~~Automatic updates~~
+8. Tunnels and port forwarding
+9. Profiles: custom shells, startup commands

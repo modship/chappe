@@ -7,6 +7,7 @@ mod servers;
 mod session;
 mod settings;
 mod ssh;
+mod updates;
 
 use tauri::Manager;
 
@@ -16,6 +17,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(session::SessionManager::default())
         .manage(ssh::Connections::default())
         .manage(files::Transfers::default())
@@ -54,6 +57,7 @@ pub fn run() {
             history::history_import_ssh,
             settings::settings_load,
             settings::settings_save,
+            updates::updates_configured,
             servers::servers_list,
             servers::server_save,
             servers::server_delete,

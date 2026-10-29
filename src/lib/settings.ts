@@ -19,6 +19,8 @@ export interface Settings {
   uiFontFamily: string;
   /** Interface text size, as a factor of the default. */
   uiScale: number;
+  /** Look for a new version at launch and every few hours. */
+  autoUpdateCheck: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -32,6 +34,7 @@ export const DEFAULT_SETTINGS: Settings = {
   editorFontSize: 13,
   uiFontFamily: "",
   uiScale: 1,
+  autoUpdateCheck: true,
 };
 
 export const FONT_SIZES = { min: 8, max: 32 };
@@ -63,6 +66,7 @@ export function normalize(raw: unknown): Settings {
     editorFontSize: clamp(s.editorFontSize, FONT_SIZES.min, FONT_SIZES.max, d.editorFontSize),
     uiFontFamily: typeof s.uiFontFamily === "string" ? s.uiFontFamily.trim().slice(0, 100) : d.uiFontFamily,
     uiScale: UI_SCALES.some((u) => u.value === s.uiScale) ? (s.uiScale as number) : d.uiScale,
+    autoUpdateCheck: typeof s.autoUpdateCheck === "boolean" ? s.autoUpdateCheck : d.autoUpdateCheck,
   };
 }
 

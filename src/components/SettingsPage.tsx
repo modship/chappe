@@ -15,17 +15,30 @@ import {
   type Settings,
 } from "../lib/settings";
 import { THEMES, themeById, type Theme } from "../lib/themes";
+import { updateError, type Update } from "../lib/updates";
 
 interface Props {
   active: boolean;
   settings: Settings;
   onChange(patch: Partial<Settings>): void;
   onReset(): void;
+  updates: Updates;
+}
+
+interface Updates {
+  version: string;
+  /** This build can verify updates (it has a public key). */
+  configured: boolean;
+  /** A newer version found by a check. */
+  available: Update | null;
+  check(): Promise<Update | null>;
+  /** Shows what's new and offers to install. */
+  open(): void;
 }
 
 const OTHER = "\u0000other";
 
-export function SettingsPage({ active, settings, onChange, onReset }: Props) {
+export function SettingsPage({ active, settings, onChange, onReset, updates }: Props) {
   const theme = themeById(settings.theme);
   // Listing installed fonts measures text; once is enough.
   const installed = useMemo(() => installedFonts(), []);
@@ -214,6 +227,8 @@ export function SettingsPage({ active, settings, onChange, onReset }: Props) {
           </div>
         </section>
 
+        <UpdatesSection updates={updates} settings={settings} onChange={onChange} />
+
         <footer className="settings-footer">
           <button
             type="button"
@@ -228,6 +243,83 @@ export function SettingsPage({ active, settings, onChange, onReset }: Props) {
         </footer>
       </div>
     </div>
+  );
+}
+
+function UpdatesSection({
+  updates,
+  settings,
+  onChange,
+}: {
+  updates: Updates;
+  settings: Settings;
+  onChange(patch: Partial<Settings>): void;
+}) {
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<{ text: string; error: boolean } | null>(null);
+
+  const check = () => {
+    setChecking(true);
+    setResult(null);
+    updates
+      .check()
+      .then((found) => {
+        if (found) updates.open();
+        else setResult({ text: "Chappe is up to date.", error: false });
+      })
+      .catch((e) => setResult({ text: updateError(e), error: true }))
+      .finally(() => setChecking(false));
+  };
+
+  return (
+    <section className="settings-section" aria-labelledby="settings-updates">
+      <h2 id="settings-updates">Updates</h2>
+      <div className="settings-row">
+        <span>Version</span>
+        <div className="settings-control">
+          <span className="settings-version">{updates.version || "…"}</span>
+          {updates.available ? (
+            <button type="button" className="button-primary button-small" onClick={updates.open}>
+              Install {updates.available.version}…
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="button-quiet button-small"
+              disabled={!updates.configured || checking}
+              onClick={check}
+            >
+              {checking ? "Checking…" : "Check for updates"}
+            </button>
+          )}
+          {result && (
+            <p className={result.error ? "settings-hint settings-warning" : "settings-hint"} role="status">
+              {result.text}
+            </p>
+          )}
+          {!updates.configured && (
+            <p className="settings-hint">
+              This build has no update signing key, so it can't verify updates. See "Releases and updates" in the
+              README.
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="settings-row">
+        <span />
+        <div className="settings-control">
+          <label className="settings-check">
+            <input
+              type="checkbox"
+              checked={settings.autoUpdateCheck}
+              disabled={!updates.configured}
+              onChange={(e) => onChange({ autoUpdateCheck: e.target.checked })}
+            />
+            Check for updates automatically
+          </label>
+        </div>
+      </div>
+    </section>
   );
 }
 
