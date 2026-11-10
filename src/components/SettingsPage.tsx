@@ -299,8 +299,8 @@ function UpdatesSection({
           )}
           {!updates.configured && (
             <p className="settings-hint">
-              This build has no update signing key, so it can't verify updates. See "Releases and updates" in the
-              README.
+              This build has no update signing key, so it can't verify updates. See "Releases and updates" in
+              DEVELOPMENT.md.
             </p>
           )}
         </div>

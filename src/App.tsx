@@ -126,6 +126,8 @@ const newTab = (target: TabTarget): Tab => ({
   state: target.kind === "settings" ? "live" : "connecting",
   title: "",
 });
+/** Oldest first, whatever order the tab bar shows. */
+const byCreation = (a: Tab, b: Tab) => Number(a.id.slice(4)) - Number(b.id.slice(4));
 
 type Dialog = { server: ServerEntry | null } | null;
 
@@ -292,6 +294,16 @@ export default function App({ initialSettings }: { initialSettings: Settings }) 
 
   const patchTab = useCallback((id: string, patch: Partial<Tab>) => {
     setTabs((list) => list.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  }, []);
+
+  const moveTab = useCallback((id: string, to: number) => {
+    setTabs((list) => {
+      const from = list.findIndex((t) => t.id === id);
+      if (from < 0 || from === to) return list;
+      const next = [...list];
+      next.splice(to, 0, ...next.splice(from, 1));
+      return next;
+    });
   }, []);
 
   const openTab = useCallback((target: TabTarget) => {
@@ -562,10 +574,13 @@ export default function App({ initialSettings }: { initialSettings: Settings }) 
           onSelect={setActiveId}
           onClose={closeTab}
           onCloseMany={closeTabs}
+          onMove={moveTab}
           onNew={openPalette}
         />
         <div className="terminals">
-          {tabs.map((tab) =>
+          {/* Panes stay in creation order: reordering tabs must not move a
+              pane in the DOM, which would drop its focus and scroll position. */}
+          {[...tabs].sort(byCreation).map((tab) =>
             tab.target.kind === "editor" ? (
               <CodeEditor
                 key={tab.id}

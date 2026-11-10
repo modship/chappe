@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Tab } from "../App";
 import { shortcutLabel } from "../lib/shortcuts";
 import { ContextMenu, type MenuItem } from "./ContextMenu";
@@ -11,13 +11,23 @@ interface Props {
   onSelect(id: string): void;
   onClose(id: string): void;
   onCloseMany(ids: string[]): void;
+  /** Puts a tab at an index of the strip. */
+  onMove(id: string, index: number): void;
   onNew(): void;
 }
 
+/** How far a pressed tab travels before it is a drag and not a click. */
+const DRAG_THRESHOLD = 5;
+
 // No native tooltips on tabs: WebKit shows them over the tab menu. The status
 // bar has a tab's full path or address.
-export function TabBar({ tabs, activeId, onSelect, onClose, onCloseMany, onNew }: Props) {
+export function TabBar({ tabs, activeId, onSelect, onClose, onCloseMany, onMove, onNew }: Props) {
   const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
+  // Pointer events, not HTML drag and drop: Tauri's file drop takes that over on Windows.
+  const drag = useRef<{ id: string; x: number } | null>(null);
+  const endDrag = () => {
+    drag.current = null;
+  };
 
   const tabMenu = (tab: Tab): MenuItem[] => {
     const index = tabs.indexOf(tab);
@@ -37,7 +47,30 @@ export function TabBar({ tabs, activeId, onSelect, onClose, onCloseMany, onNew }
 
   return (
     <div className="tabbar" data-tauri-drag-region>
-      <div className="tabs" role="tablist" aria-label="Open terminals">
+      <div
+        className="tabs"
+        role="tablist"
+        aria-label="Open terminals"
+        onPointerMove={(e) => {
+          const pressed = drag.current;
+          if (!pressed) return;
+          const strip = e.currentTarget;
+          // The strip takes the pointer only once the drag starts, so a plain
+          // click still reaches the tab and its close button.
+          if (!strip.hasPointerCapture(e.pointerId)) {
+            // Released outside the strip: that press is over.
+            if (!(e.buttons & 1)) return endDrag();
+            if (Math.abs(e.clientX - pressed.x) < DRAG_THRESHOLD) return;
+            strip.setPointerCapture(e.pointerId);
+            onSelect(pressed.id);
+          }
+          // Tabs share one width, so the dragged tab lands under the pointer.
+          const slot = [...strip.children].findIndex((tab) => e.clientX < tab.getBoundingClientRect().right);
+          onMove(pressed.id, slot < 0 ? tabs.length - 1 : slot);
+        }}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+      >
         {tabs.map((tab) => {
           const active = tab.id === activeId;
           const label = tabLabel(tab);
@@ -52,6 +85,11 @@ export function TabBar({ tabs, activeId, onSelect, onClose, onCloseMany, onNew }
               data-state={tab.state}
               data-remote={tab.target.kind === "ssh"}
               data-dirty={Boolean(tab.dirty)}
+              onPointerDown={(e) => {
+                if (e.button === 0 && !(e.target as Element).closest(".tab-close")) {
+                  drag.current = { id: tab.id, x: e.clientX };
+                }
+              }}
               onMouseDown={(e) => {
                 if (e.button === 1) {
                   e.preventDefault();

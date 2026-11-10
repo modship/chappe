@@ -26,7 +26,7 @@ jobs:
         run: |
           pubkey=$(jq -r '.plugins.updater.pubkey' src-tauri/tauri.conf.json)
           if [ -z "$pubkey" ] || [ "$pubkey" = "null" ]; then
-            echo "::error::plugins.updater.pubkey is empty in src-tauri/tauri.conf.json. See 'Releases and updates' in the README."
+            echo "::error::plugins.updater.pubkey is empty in src-tauri/tauri.conf.json. See 'Releases and updates' in DEVELOPMENT.md."
             exit 1
           fi
           if [ "$HAS_SIGNING_KEY" != "true" ]; then

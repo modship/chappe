@@ -100,6 +100,9 @@ h2 {
 .main {
   display: grid;
   grid-template-rows: var(--titlebar-h) minmax(0, 1fr) var(--statusbar-h);
+  /* Without it a long path in the status bar widens the column, and the
+     tab bar and status bar slide under the history panel. */
+  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
   border-left: 1px solid var(--line);
 }
@@ -1426,6 +1429,8 @@ body.resizing * {
 }
 
 .status-path {
+  /* A block, not the items' inline-flex: the ellipsis needs it. */
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
